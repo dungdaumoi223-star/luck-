@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>Typing Game</title>
+  <style>
+    body { 
+      font-family: sans-serif; 
+      background: linear-gradient(120deg, #f6d365, #fda085); 
+      padding:20px; 
+    }
+    .card { 
+      background:#fff; 
+      border-radius:15px; 
+      box-shadow:0 4px 12px rgba(0,0,0,0.2); 
+      padding:20px; 
+      max-width:700px; 
+      margin:auto; 
+    }
+    h2 {
+      text-align:center;
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+      -webkit-background-clip: text;
+      color: transparent;
+      font-size: 28px;
+    }
+    .row { display:flex; gap:10px; margin:10px 0; }
+    button { 
+      padding:10px 14px; 
+      border:0; 
+      border-radius:6px; 
+      background:#2b8cff; 
+      color:#fff; 
+      cursor:pointer; 
+      transition:0.3s;
+    }
+    button:hover {
+      background:#1a6ed8;
+      transform: scale(1.05);
+    }
+    button.secondary { background:#777; }
+    button.secondary:hover { background:#555; }
+    input { 
+      flex:1; 
+      padding:8px; 
+      font-size:16px; 
+      border:2px solid #ccc; 
+      border-radius:6px; 
+      transition:0.3s;
+    }
+    input:focus {
+      border-color:#2b8cff;
+      outline:none;
+      box-shadow:0 0 5px #2b8cff;
+    }
+    .result { 
+      margin-top:10px; 
+      white-space:pre-line; 
+      font-size:18px;
+      font-weight:bold;
+    }
+    .result.correct { color:green; }
+    .result.wrong { color:red; }
+    .prompt-noun { color:#2b8cff; }
+    .prompt-verb { color:#ff6600; }
+    .prompt-adj { color:#8000ff; }
+    #progress {
+      text-align:right;
+      font-weight:bold;
+      margin-bottom:10px;
+      color:#333;
+    }
+    #finalResult {
+      display:none;
+      margin-top:20px;
+      padding:15px;
+      background:#f9f9f9;
+      border:2px solid #ddd;
+      border-radius:10px;
+      font-size:18px;
+    }
+  </style>
+</head>
+<body>
+<div class="card" id="app">
+  <h2>Typing Game</h2>
+  <div id="menu">
+    <p>Chọn bộ từ:</p>
+    <button onclick="startGame('Danh từ (n)')">Danh từ</button>
+    <button onclick="startGame('Động từ (v)')">Động từ</button>
+    <button onclick="startGame('Tính từ (adj)')">Tính từ</button>
+  </div>
+  <div id="game" style="display:none;">
+    <div id="progress"></div>
+    <div id="prompt" style="font-size:20px; font-weight:bold; margin:10px 0;"></div>
+    <div class="row"><input id="inputWord" placeholder="Từ English" /></div>
+    <div class="row"><input id="inputSyll" placeholder="Số âm tiết" /></div>
+    <div class="row">
+      <button onclick="checkWord()">Kiểm tra</button>
+      <button class="secondary" onclick="speakWord()">🔊 Phát âm</button>
+      <button class="secondary" onclick="backMenu()">⤺ Quay lại</button>
+    </div>
+    <div class="result" id="result"></div>
+    <div id="finalResult"></div>
+  </div>
+</div>
+
+<audio id="sound-correct" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="sound-wrong" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+<script>
+const wordSets = {
+  "Danh từ (n)": {
+"hành động  (n)": ["action"],
+            "hoạt động   (n)": ["activity"],
+            "lời khuyên  (n)": ["advice"],
+            "mục tiêu  (n)": ["aim"],
+            "thiết bị , dụng cụ  (n)": ["appliance"],
+            "bầu không khí   (n)": ["atmosphere"],
+            "khu vực   (n)": ["area"],
+            "nhận thức   (n)": ["awareness"],
+            "chai lọ   (n)": ["bottle"],
+            "cái thùng   (n)": ["bin"],
+            "dấu chân cacbon   (n)": ["carbon footprint"],
+            "lễ kỉ niệm   (n)": ["ceremony"],
+            "sự thay đổi   (n)": ["change"],
+            "hóa chất    (n)": ["chemical"],
+            "câu lạc bộ    (n)": ["club"],
+            "tổn hại thiệt hại   (n)": ["damage"],
+            "thiết bị    (n)": ["device"],
+            "sự khác biệt    (n)": ["difference"],
+            "điện    (n)": ["electricity"],
+            "sự thải ra    (n)": ["emission"],
+            "năng lượng    (n)": ["energy"],
+            "môi trường    (n)": ["environment"],
+            "buổi triển lãm    (n)": ["exhibition"],
+            "vụ nổ   (n)": ["explosion"],
+            "thùng rác   (n)": ["garbage can"],
+            "thói quen   (n)": ["habit"],
+            "vấn đề    (n)": ["issue"],
+            "vận dụng    (n)": ["item"],
+            "lối sống cách sống   (n)": ["lifestyle"],
+            "nguyên liệu    (n)": ["material"],
+            "phương pháp(n)": ["method"],
+            "nguồn tài nguyên thiên nhiên   (n)": ["natural resources"],
+            "khu xóm   (n)": ["neighborhood"],
+            "sự ô nhiễm    (n)": ["pollution"],
+            "sản phẩm   (n)": ["product"],
+            "phương tiện công cộng   (n)": ["public transport"],
+            "bóng râm   (n)": ["shade"],
+            "tình huống  (n)": ["situation"],
+            "lời đề nghị  (n)": ["suggestion"],
+            "nhiệt độ   (n)": ["temperature"],
+            "chai lọ   (n)": ["trash", "rubbish", "waste"],
+  },
+  "Động từ (v)": {
+    "đạt được  (v)": ["achieve"],
+           "đạt được  (v)": ["achieve"],
+            "tham dự (v)": ["attend"],
+            "dựa trên  (v)": ["base on"],
+            "có thể (v)": ["be able to"],
+            "tự hào về (v)": ["be proud of"],
+            "chịu trách nhiệm (v)": ["be responsible for"],
+            "dọn dẹp (v)": ["clear up"],
+            "sưu tầm (v)": ["collect"],
+            "tạo ra (v)": ["crate"],
+            "cắt giảm (v)": ["cut down on"],
+            "khuyến khích (v)": ["encourage"],
+            "ước tính (v)": ["estimate"],
+            "gây hại  (v)": ["harm"],
+            "cait thiện (v)": ["improve"],
+            "tham gia (v)": ["join"],
+            "dẫn đến (v)": ["lead"],
+            "xả rác (v)": ["litter"],
+            "chọn theo (v)": ["adopt"],
+            "chia nhỏ (v)": ["break down"],
+            "tổ chức (v)": ["organize"],
+            "nhặt (v)": ["pick up"],
+            "sản xuất ra (v)": ["produce"],
+            "bảo vệ (v)": ["protect"],
+            "cung cấp(v)": ["provide"],
+            "làm gia tăng (v)": ["raise"],
+            "tái chế (v)": ["recycle"],
+            "làm giảm (v)": ["reduce"],
+            "thành lập (v)": ["set up "],
+            "TẮT  (v)": ["turn off"],
+            "lẵng phí(v)": ["waste"],
+            "tham gia (v)": ["take part in"],
+  },
+  "Tính từ (adj)": {
+    "nguy hiểm(adj)": ["adngerous"],
+            "dơ bẩn(adj)": ["dirty"],
+            "thân thiện môi trường(adj)": ["Eco-friendly"],
+            "thuộc về điện(adj)": ["electrical"],
+            "thuộc về môi trường(adj)": ["environment"],
+            "toàn cầu(adj)": ["global"],
+            "độc hại(adj)": ["harmful"],
+            "tự nhiên(adj)": ["natural"],
+            "hữu cơ(adj)": ["organic"],
+            "cá nhân(adj)": ["personal"],
+            "bị ô nhiễm (adj)": ["polluted"],
+            "chữ qua chế biến(adj)": ["raw"],
+            "có thể làm đầy lại (adj)": ["refillable"],
+            "có thể tái sử dụng (adj)": ["reusable"],
+            "bền vững(adj)": ["sustainable"],
+  }
+};
+
+let currentSet = {}, wordList = [], index=0, reviewList=[], currentCat="";
+let correctCount = 0, wrongCount = 0;
+let allWrongList = [];
+
+function startGame(cat){
+  currentSet = wordSets[cat];
+  currentCat = cat;
+  wordList = Object.keys(currentSet);
+  shuffle(wordList);
+  index = 0; reviewList = [];
+  correctCount = 0; wrongCount = 0; allWrongList = [];
+  document.getElementById("menu").style.display="none";
+  document.getElementById("game").style.display="block";
+  document.getElementById("finalResult").style.display="none";
+  showWord();
+}
+function backMenu(){
+  document.getElementById("menu").style.display="block";
+  document.getElementById("game").style.display="none";
+}
+function showWord(){
+  const promptEl=document.getElementById("prompt");
+  const progressEl=document.getElementById("progress");
+
+  if(index<wordList.length){
+    promptEl.innerText=wordList[index];
+    progressEl.innerText = `Từ ${index+1} / ${wordList.length}`;
+    promptEl.className="";
+    if(currentCat.includes("Danh từ")) promptEl.classList.add("prompt-noun");
+    if(currentCat.includes("Động từ")) promptEl.classList.add("prompt-verb");
+    if(currentCat.includes("Tính từ")) promptEl.classList.add("prompt-adj");
+  } else {
+    if(reviewList.length){
+      wordList=reviewList; reviewList=[]; shuffle(wordList); index=0;
+      progressEl.innerText = `Ôn tập lại ${wordList.length} từ sai`;
+      document.getElementById("result").innerText="🔄 Ôn tập lại từ sai...";
+      setTimeout(showWord,800);
+    } else {
+      promptEl.innerText="🎉 Hoàn thành!";
+      progressEl.innerText = "";
+      document.getElementById("result").innerText="";
+      showFinalResult();
+    }
+  }
+}
+function checkWord(){
+  if(index>=wordList.length) return;
+  const resultEl=document.getElementById("result");
+  const current = wordList[index];
+  const answers = currentSet[current].map(s=>s.toLowerCase());
+  const correct = answers[0];
+  const userWord=document.getElementById("inputWord").value.trim().toLowerCase();
+  const userSyll=document.getElementById("inputSyll").value.trim();
+  
+  const correctSyll=String(countSyllables(correct));
+
+  if(answers.includes(userWord) && userSyll===correctSyll){
+    resultEl.className="result correct";
+    resultEl.innerText=`✅ Đúng!\nÂm tiết: ${correctSyll}`;
+    document.getElementById("sound-correct").play();
+    correctCount++;
+  } else {
+    resultEl.className="result wrong";
+    resultEl.innerText=`❌ Sai!\nĐáp án: ${correct}\nÂm tiết: ${correctSyll}`;
+    document.getElementById("sound-wrong").play();
+    wrongCount++;
+    if(!reviewList.includes(current)) reviewList.push(current);
+    if(!allWrongList.includes(current)) allWrongList.push(current);
+  }
+  document.getElementById("inputWord").value="";
+  document.getElementById("inputSyll").value="";
+  index++;
+  setTimeout(showWord,1200);
+}
+
+function showFinalResult(){
+  let finalBox = document.getElementById("finalResult");
+  finalBox.style.display="block";
+  let html = `📊 Kết quả:<br>✅ Đúng: ${correctCount}<br>❌ Sai: ${wrongCount}<br><br>`;
+  
+  if(wrongCount>0){
+    html += "📖 Các từ sai:<br>";
+    for(let key in currentSet){
+      let word = currentSet[key][0];
+      if(allWrongList.includes(key)){
+        html += `- <b>${word}</b> : ${key}<br>`;
+      }
+    }
+  }
+  finalBox.innerHTML = html;
+}
+
+function countSyllables(word){
+  let groups=word.toLowerCase().replace(/\s+/g,'').match(/[aeiouy]+/g);
+  return Math.max(1, groups?groups.length:1);
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+function speakWord(){
+  if(index>=wordList.length) return;
+  const current=wordList[index];
+  const text=currentSet[current][0];
+  let u=new SpeechSynthesisUtterance(text);
+  u.lang="en-US"; 
+  speechSynthesis.speak(u);
+}
+</script>
+</body>
+</html>
